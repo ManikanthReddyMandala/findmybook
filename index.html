@@ -1,0 +1,214 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Recommendation System</title>
+    <style>
+    .button {
+ 
+      padding: 10px 15px;
+      font-size: 18px;
+     border: none;
+      border-radius: 10px;
+      color: #fff;
+      background-color: gray;
+    text-align: center;
+      text-decoration: none;
+      display: inline-block;
+    outline: none;
+    }
+    
+    </style>
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+</head>
+<center>
+<body>
+    <h2>Book Recommendation System</h2>
+
+    <table id="table1"; cellspacing="5px" cellpadding="5%"; align="center">  
+      <tr>
+          <div id="main">You ask, We give!</div>
+        </tr>
+        <tr>
+          <td><h4>Author: </td><td><input type="text" id="aname" name="aname"></h4></td>
+        </tr>
+        <tr>
+          <td><h4>Genre:</td> <td><input type="text" id="gname" name="gname"></h4></td>
+        </tr>
+        <tr>
+          <td><h4>Title:</td> <td><input type="text" id="tname" name="tname"></h4></td>
+        </tr>
+        <tr>
+          <td><h4>Year: </td><td><input type="text" id="yname" name="yname"></h4>  </td>
+        </tr>
+        <tr>
+          <td><h4>Rating: </td><td><input type="text" id="rname" name="rname"></h4></td>
+        </tr>
+        <tr>
+        <td></td>
+          <td><button class="button" onclick="submit()">submit</button></td>
+        </tr>
+           </table>
+   
+<br>
+    <ul id="response"></ul>
+  </body>
+ </center>
+
+<script src="https://unpkg.com/neo4j-driver"></script>
+<script>
+    
+    if (window.neo4jDesktopApi) {
+       neo4jDesktopApi.getContext()
+           .then((context) => {
+               for (let project of context.projects) {
+                   console.log("Project :: " + project.name);
+                   for (let graph of project.graphs) {
+                       console.log(graph.name);
+                   }
+               }
+           }
+       );
+   }
+
+function submit(){
+  document.getElementById("response").innerHTML='';
+        //query the active graph
+        neo4jDesktopApi.getContext()
+            .then((context) => {
+                for (let project of context.projects) {
+                    for (let graph of project.graphs) {
+                        if (graph.status === 'ACTIVE') {
+                            //obtain the bolt protocol which has all the connection details
+                            let boltProtocol = graph.connection.configuration.protocols.bolt;
+                            var driver = neo4j.driver('bolt://localhost:7687/',neo4j.auth.basic('username', 'password'));
+
+                            //Create a session and execute a query
+                            
+                               var aname=document.getElementById('aname').value;
+                                var gname=document.getElementById('gname').value;
+                                 var tname=document.getElementById('tname').value;
+                                  var yname=document.getElementById('yname').value;
+                                  var rname=document.getElementById('rname').value;
+            
+                              if(aname.length==0)
+                              {
+                                var a=0;
+                                aname='.*.';
+                              }
+                              else{
+                                aname='(?i)'+aname;
+                              }
+                              if(gname.length==0)
+                              {
+                                var b=0;
+                                gname='.*.';
+                              }
+                              else{
+                                gname='(?i)'+gname;
+                              }
+                              if(tname.length==0)
+                              {
+                                var c=0;
+                                tname='.*.';
+                              }
+                              else{
+                                tname='(?i)'+tname;
+                              }
+                              if(yname.length==0)
+                              {
+                                var d=0;
+                                yname='.*.';
+                              }
+                              if(rname.length==0)
+                              {
+                                var e=0;
+                                rname='.*.';
+                              }
+                              if(a+b+c+d+e==0)
+                             {
+                              var ulh = document.createElement("ul");
+                                        ulh.appendChild(document.createTextNode("No records matching"));
+                                          
+                                      document.getElementById("response").appendChild(ulh);
+                                return;
+                             }
+                             
+                            let session = driver.session();
+                              session.run('MATCH (j:Genre)-[:genreOf]->(k:Title),(l:Author)-[:authorOf]->(k:Title),(m:Year)-[:yearOf]->(k:Title),(n:Rating)-[:ratingOf]->(k:Title) where l.text=~$aname and j.text=~$gname and k.text=~$tname and m.text=~$yname and n.text=~$rname return j,k,l,m,n',parameters = {'aname':aname ,'gname':gname,'tname':tname,'yname':yname,
+                                'rname':rname})
+                                    .then(result => {
+                                      
+                                      
+                                       var table = document.createElement("table");
+                                       table.setAttribute("border","2");
+                                       
+                                       table.style.borderCollapse='collapse';
+                                       var tr=table.appendChild(document.createElement("tr"));
+
+                                       var th=tr.appendChild(document.createElement("th"));
+                                       th.appendChild(document.createTextNode("Author"));
+                                       var th=tr.appendChild(document.createElement("th"));
+                                       th.appendChild(document.createTextNode("Title"));
+                                       var th=tr.appendChild(document.createElement("th"));
+                                       th.appendChild(document.createTextNode("Genre"));
+                                       var th=tr.appendChild(document.createElement("th"));
+                                       th.appendChild(document.createTextNode("Year"));
+                                       var th=tr.appendChild(document.createElement("th"));
+                                       th.appendChild(document.createTextNode("Rating"));
+
+
+
+
+
+									                   if (result.records && result.records.length>0) {
+                                      result.records.forEach(record => {
+                                        console.log(record);
+                                         var tr=table.appendChild(document.createElement("tr"));
+                                       var td=tr.appendChild(document.createElement("td"));
+                                       td.appendChild(document.createTextNode(record._fields["2"].properties.text));
+                                       var td=tr.appendChild(document.createElement("td"));
+                                       td.appendChild(document.createTextNode(record._fields["1"].properties.text));
+                                       var td=tr.appendChild(document.createElement("td"));
+                                       td.appendChild(document.createTextNode(record._fields["0"].properties.text));
+                                       var td=tr.appendChild(document.createElement("td"));
+                                       td.appendChild(document.createTextNode(record._fields["3"].properties.text));
+                                        var td=tr.appendChild(document.createElement("td"));
+                                       td.appendChild(document.createTextNode(record._fields["4"].properties.text));
+
+                                      
+                                    })
+                                     
+                                    document.getElementById("response").appendChild(table);
+
+
+                                    
+                                  }
+                                  else{
+                                     var ul = document.createElement("ul");
+                                        ul.appendChild(document.createTextNode("No records matching"));
+                                          
+                                      document.getElementById("response").appendChild(ul);
+                                     
+
+
+
+                                  }
+                                })
+                                  .catch(error => {
+                                     console.log(error)
+                                  })
+                                 .then(() => session.close())
+                                 
+                    
+                  }
+                }
+                
+            }
+			});
+      
+      
+      
+            }
+</script>
+</html>
